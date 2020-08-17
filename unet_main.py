@@ -16,7 +16,9 @@ def load_train_set(repim, repmask, width, height, crop_size, nb_im):
     width and height are required for the image to support the successives
     convolutions
     """
+    print(repim)
     images = io.imread_collection(repim, plugin='tifffile')
+    print(len(images))
     masks = io.imread_collection(repmask, plugin='tifffile')
 
     x_train = []
@@ -34,6 +36,7 @@ def load_train_set(repim, repmask, width, height, crop_size, nb_im):
 
 def train_step(inputs, labels, optimizer, criterion, batch_size, crop_size):
     """training part"""
+    global unet
     width_out = inputs.shape[2] - 2 * crop_size
     height_out = inputs.shape[3] - 2 * crop_size
     optimizer.zero_grad()
@@ -60,6 +63,7 @@ def log_unet(epochs, nb_im, total_loss, batch_loss, time_unet):
 
 def train_unet(batch_size, epochs, x_train, y_train, crop_size):
     """loop to train the unet model"""
+    global unet
     unet = unet_class.UNet(in_channel=3, out_channel=2)
     unet = unet.cuda()
     criterion = torch.nn.CrossEntropyLoss()
@@ -93,11 +97,14 @@ def train_unet(batch_size, epochs, x_train, y_train, crop_size):
 
 def main():
     """Load image and use it to train unet module."""
-    rep = '/home/bobette/pCloudDrive/Informatique/datascience/ImageSegmentation/'
-    repim = rep + 'data/breast_cancer_cell_seg/Images/*.tif'
-    repmask = rep + 'data/breast_cancer_cell_seg/Masks/*.TIF'
+    #rep = '/home/bobette/pCloudDrive/Informatique/datascience/ImageSegmentation/'
+    repim = ("/home/bobette/pCloudDrive/Informatique/datascience/"
+             "ImageSegmentation/data/breast_cancer_cell_seg/Images/*.tif")
+    repmask = ("/home/bobette/pCloudDrive/Informatique/datascience/"
+               "ImageSegmentation/data/breast_cancer_cell_seg/Masks/*.TIF")
     nb_im = 50
     crop_size = 44
+    nb_epochs = 3
 
     x_train, y_train = load_train_set(repim,
                                       repmask,
@@ -106,7 +113,7 @@ def main():
                                       crop_size=crop_size,
                                       nb_im=nb_im)
 
-    train_unet(batch_size=1, epochs=3, x_train=x_train,
+    train_unet(batch_size=1, epochs=nb_epochs, x_train=x_train,
                y_train=y_train, crop_size=crop_size)
 
 
