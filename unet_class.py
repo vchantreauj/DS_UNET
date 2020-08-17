@@ -1,40 +1,9 @@
 """unet class file and usefull functions"""
 
 import numpy as np
-from skimage import io
 import torch
 from torch import nn
 import torch.nn.functional as F
-
-class ImProcess():
-    """class to process image previously to unet training"""
-
-    def __init__(self, width, height):
-        self.width = width
-        self.height = height
-        self.nb_im = 10
-        self.crop_size = 44
-
-    def load_set(self, repim, repmask, nb_im):
-        """load images and get the train set
-        width and height are required for the image to support the successives
-        convolutions
-        """
-        self.nb_im = nb_im
-        images = io.imread_collection(repim, plugin='tifffile')
-        masks = io.imread_collection(repmask, plugin='tifffile')
-
-        im_process = []
-        labels = []
-        for i in range(self.nb_im):
-            im_process.append(images[i][:self.width, :self.height])
-            labels.append(masks[i][self.crop_size:self.width - self.crop_size,
-                                   self.crop_size:self.height - self.crop_size])
-
-        im_process = np.array(im_process) / 255
-        im_process = np.transpose(im_process, (0, 3, 1, 2))
-        labels = np.array(labels) / 255
-        return im_process, labels
 
 
 class UNet(nn.Module):
