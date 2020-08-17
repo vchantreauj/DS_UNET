@@ -6,6 +6,36 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
+class ImProcess():
+    """class to process image previously to unet training"""
+
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+        self.nb_im = 10
+        self.crop_size = 44
+
+    def load_set(self, repim, repmask, nb_im):
+        """load images and get the train set
+        width and height are required for the image to support the successives
+        convolutions
+        """
+        self.nb_im = nb_im
+        images = io.imread_collection(repim, plugin='tifffile')
+        masks = io.imread_collection(repmask, plugin='tifffile')
+
+        im_process = []
+        labels = []
+        for i in range(self.nb_im):
+            im_process.append(images[i][:self.width, :self.height])
+            labels.append(masks[i][self.crop_size:self.width - self.crop_size,
+                                   self.crop_size:self.height - self.crop_size])
+
+        im_process = np.array(im_process) / 255
+        im_process = np.transpose(im_process, (0, 3, 1, 2))
+        labels = np.array(labels) / 255
+        return im_process, labels
+
 
 class UNet(nn.Module):
     """encoder decoder method to analyse medical images"""
@@ -38,8 +68,10 @@ class UNet(nn.Module):
         final_layer = self.final_layer(decode_block1)
         return final_layer
 
+
     def __init__(self, in_channel, out_channel):
         super(UNet, self).__init__()
+        self.crop_size = 44
         self.conv_encode1 = contracting_block(
             in_channels=in_channel, out_channels=64)
         self.conv_maxpool1 = torch.nn.MaxPool2d(kernel_size=2)
@@ -63,26 +95,6 @@ class UNet(nn.Module):
         self.conv_decode2 = expansive_block(256, 128, 64)
         self.final_layer = final_block(128, 64, out_channel)
 
-
-def load_set(repim, repmask, width, height, crop_size, nb_im):
-    """load images and get the train set
-    width and height are required for the image to support the successives
-    convolutions
-    """
-    images = io.imread_collection(repim, plugin='tifffile')
-    masks = io.imread_collection(repmask, plugin='tifffile')
-
-    im_process = []
-    labels = []
-    for i in range(nb_im):
-        im_process.append(images[i][:width, :height])
-        labels.append(masks[i][crop_size:width - crop_size,
-                               crop_size:height - crop_size])
-
-    im_process = np.array(im_process) / 255
-    im_process = np.transpose(im_process, (0, 3, 1, 2))
-    labels = np.array(labels) / 255
-    return im_process, labels
 
 def contracting_block(in_channels, out_channels, kernel_size=3):
     """convolution layers for unet contracting block"""
@@ -140,7 +152,11 @@ def final_block(in_channels, mid_channel, out_channels, kernel_size=3):
 def crop_and_concat(upsampled, bypass, crop=False):
     """crop and concat input to prepare the expansion block"""
     if crop:
-        crop_size = (bypass.size()[2] - upsampled.size()[2]) // 2
-        bypass = F.pad(bypass, (-crop_size, -crop_size, -crop_size, -crop_size))
+        crop_im_size = (bypass.size()[2] - upsampled.size()[2]) // 2
+        bypass = F.pad(bypass, (
+            -crop_im_size,
+            -crop_im_size,
+            -crop_im_size,
+            -crop_im_size))
     # concatenate on row (add element on line)
     return torch.cat((upsampled, bypass), 1)
