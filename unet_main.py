@@ -28,11 +28,11 @@ def main(argv):
     x_test, y_test = im_process.get_process_set(
         unet_train.train_size,
         len(im_process.images))
-    batch_test_x = self.get_tensor_set(x_test, 0)
-    batch_test_y = self.get_tensor_set(y_test, 0, 'long')
+    batch_test_x = unet_train.get_tensor_set(x_test, 0)
+    batch_test_y = unet_train.get_tensor_set(y_test, 0, 'long')
 
-    unet_tools.save_image()
-    #test_xnp = batch_test_x.squeeze(0).detach().cpu().numpy()
+    unet_tools.save_image(batch_test_x, 'testx', (1,2,0))
+    #test_xnp = .squeeze(0).detach().cpu().numpy()
     #plt.imshow(np.transpose(test_xnp, (1,2,0))[:,:,0])
     #plt.savefig('outputunet/testx'+str(j)+'.jpg')
 

@@ -54,9 +54,11 @@ class ImProcess():
         return self.get_process_set(0, nb_im)
 
 
-def save_image(input_image, file_name):
+def save_image(input_image, file_name, transpose=()):
     """transform tensor into numpy matrix and save it as image"""
     np_image = input_image.squeeze(0).detach().cpu().numpy()
+    if not all(transpose):
+        np_image = np.transpose(np_image, transpose)
     plt.imshow(np_image)
     plt.savefig(file_name+'.jpg')
 
